@@ -47,7 +47,8 @@ body{font-family:var(--font);background:var(--gray);color:var(--navy);min-height
 .task-row:hover{border-color:var(--lgray)}
 .task-row.done{opacity:.5}
 .task-row.dragging{opacity:.4;border:1px dashed var(--blue);background:rgba(51,110,255,.04)}
-.task-row.drag-over{border-top:2px solid var(--blue)}
+.task-row.drag-over{border-top:2px solid var(--blue);margin-top:-1px}
+.task-row.drag-over-bottom{border-bottom:2px solid var(--blue);margin-bottom:-1px}
 .drag-handle{cursor:grab;color:var(--lgray);font-size:14px;padding:2px 2px 2px 0;flex-shrink:0;margin-top:1px;user-select:none;line-height:1}
 .drag-handle:active{cursor:grabbing}
 .drag-handle:hover{color:var(--mgray)}
@@ -369,35 +370,48 @@ let dragTaskId=null;
 function onDragStart(e,id){
   dragTaskId=id;
   e.dataTransfer.effectAllowed='move';
-  e.dataTransfer.setData('text/plain',id);
-  setTimeout(()=>{const el=document.querySelector(`[data-task-id="${id}"]`);if(el)el.classList.add('dragging');},0);
+  e.dataTransfer.setData('text/plain',String(id));
 }
 function onDragEnd(e){
-  document.querySelectorAll('.task-row').forEach(r=>{r.classList.remove('dragging','drag-over');});
+  document.querySelectorAll('.task-row').forEach(r=>{r.classList.remove('dragging','drag-over','drag-over-bottom');});
   dragTaskId=null;
 }
 function onDragOver(e,id){
   e.preventDefault();
+  e.stopPropagation();
   e.dataTransfer.dropEffect='move';
-  document.querySelectorAll('.task-row').forEach(r=>r.classList.remove('drag-over'));
+  if(id===dragTaskId)return;
+  document.querySelectorAll('.task-row').forEach(r=>r.classList.remove('drag-over','drag-over-bottom'));
   const el=document.querySelector(`[data-task-id="${id}"]`);
-  if(el&&id!==dragTaskId)el.classList.add('drag-over');
+  if(!el)return;
+  const rect=el.getBoundingClientRect();
+  const midY=rect.top+rect.height/2;
+  if(e.clientY<midY){el.classList.add('drag-over');}else{el.classList.add('drag-over-bottom');}
 }
 function onDrop(e,targetId,targetPhase){
   e.preventDefault();
-  document.querySelectorAll('.task-row').forEach(r=>r.classList.remove('dragging','drag-over'));
+  e.stopPropagation();
+  document.querySelectorAll('.task-row').forEach(r=>r.classList.remove('dragging','drag-over','drag-over-bottom'));
   if(dragTaskId===null||dragTaskId===targetId)return;
+  // Determine above or below based on mouse position
+  const el=document.querySelector(`[data-task-id="${targetId}"]`);
+  let insertAfter=false;
+  if(el){const rect=el.getBoundingClientRect();insertAfter=e.clientY>=rect.top+rect.height/2;}
+  // Remove dragged task
   const dragIdx=tasks.findIndex(t=>t.id===dragTaskId);
   if(dragIdx===-1)return;
   const draggedTask=tasks.splice(dragIdx,1)[0];
   draggedTask.phase=targetPhase;
+  // Find target index (after splice, indices shifted)
   const targetIdx=tasks.findIndex(t=>t.id===targetId);
-  if(targetIdx===-1){tasks.push(draggedTask);}else{tasks.splice(targetIdx,0,draggedTask);}
+  if(targetIdx===-1){tasks.push(draggedTask);}
+  else if(insertAfter){tasks.splice(targetIdx+1,0,draggedTask);}
+  else{tasks.splice(targetIdx,0,draggedTask);}
   todoSave();todoRender();
 }
 function onDropSection(e,phase){
   e.preventDefault();
-  document.querySelectorAll('.task-row').forEach(r=>r.classList.remove('dragging','drag-over'));
+  document.querySelectorAll('.task-row').forEach(r=>r.classList.remove('dragging','drag-over','drag-over-bottom'));
   if(dragTaskId===null)return;
   const dragIdx=tasks.findIndex(t=>t.id===dragTaskId);
   if(dragIdx===-1)return;
