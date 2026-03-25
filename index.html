@@ -18,7 +18,7 @@
 body{font-family:var(--font);background:var(--gray);color:var(--navy);min-height:100vh;font-size:15px}
 
 /* ── TOPBAR ── */
-.topbar{height:58px;background:var(--navy);border-bottom:2px solid rgba(90,220,165,.3);display:flex;align-items:center;padding:0 24px;gap:12px;box-shadow:0 2px 12px rgba(0,32,91,.25)}
+.topbar{height:58px;background:var(--navy);border-bottom:2px solid rgba(90,220,165,.3);display:flex;align-items:center;padding:0 24px;gap:12px;box-shadow:0 2px 12px rgba(0,32,91,.25);position:fixed;top:0;left:0;right:0;z-index:1000}
 .tb-logo{height:28px;width:auto}
 .tb-sep{width:1px;height:18px;background:rgba(255,255,255,.18);flex-shrink:0}
 .tb-title{font-size:22px;font-weight:bold;color:#fff;letter-spacing:.2px}
@@ -26,7 +26,9 @@ body{font-family:var(--font);background:var(--gray);color:var(--navy);min-height
 .tb-badge{margin-left:auto;background:rgba(90,220,165,.18);color:var(--mint);font-size:11px;font-weight:bold;padding:4px 12px;border-radius:20px;border:1px solid rgba(90,220,165,.45);letter-spacing:.3px}
 
 /* ── CONTENT ── */
-.content{max-width:1100px;margin:0 auto;padding:22px}
+.content{max-width:1100px;margin:0 auto;padding:22px;padding-top:80px}
+.sticky-header{position:fixed;top:58px;left:0;right:0;z-index:999;background:var(--gray);padding:12px 0 0;box-shadow:0 2px 8px rgba(0,0,0,.08)}
+.sticky-header-inner{max-width:1100px;margin:0 auto;padding:0 22px}
 
 /* ── SHARED ── */
 .btn{display:inline-flex;align-items:center;gap:5px;padding:7px 13px;border-radius:4px;font-size:13px;font-weight:bold;font-family:var(--font);cursor:pointer;border:1px solid transparent;transition:opacity .12s}
@@ -35,7 +37,7 @@ body{font-family:var(--font);background:var(--gray);color:var(--navy);min-height
 
 /* ── TODO TRACKER ── */
 .todo-wrap{background:#fff;border-radius:8px;box-shadow:var(--sh);padding:16px 18px}
-.progress-bar-wrap{height:3px;background:var(--gray);border-radius:2px;margin-bottom:12px;overflow:hidden}
+.progress-bar-wrap{height:3px;background:var(--gray);border-radius:2px;margin-bottom:8px;overflow:hidden}
 .progress-bar-fill{height:3px;background:var(--green-bd);border-radius:2px;transition:width .4s}
 .todo-filters{display:flex;gap:5px;flex-wrap:wrap;align-items:center;margin-bottom:14px}
 .filter-btn{font-size:12px;padding:4px 11px;border-radius:20px;border:1px solid var(--lgray);background:#fff;color:var(--mgray);cursor:pointer;font-family:var(--font)}
@@ -153,13 +155,18 @@ body{font-family:var(--font);background:var(--gray);color:var(--navy);min-height
       <li>Host this file on GitHub Pages, Netlify, or any static host — then share the URL</li>
     </ol>
   </div>
-  <div class="todo-wrap">
-    <div id="todoSummary" style="display:grid;grid-template-columns:repeat(6,1fr);gap:12px;margin-bottom:16px"></div>
-    <div class="progress-bar-wrap"><div class="progress-bar-fill" id="todoProgress"></div></div>
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:8px">
-      <div class="todo-filters" id="todoFilters" style="margin-bottom:0;flex:1;min-width:0"></div>
-      <button class="btn btn-navy" onclick="todoOpenAdd(null)">+ Add task</button>
+  <div class="sticky-header" id="stickyHeader">
+    <div class="sticky-header-inner">
+      <div id="todoSummary" style="display:grid;grid-template-columns:repeat(6,1fr);gap:12px;margin-bottom:10px"></div>
+      <div class="progress-bar-wrap"><div class="progress-bar-fill" id="todoProgress"></div></div>
+      <div style="display:flex;align-items:center;justify-content:space-between;padding-bottom:10px;flex-wrap:wrap;gap:8px">
+        <div class="todo-filters" id="todoFilters" style="margin-bottom:0;flex:1;min-width:0"></div>
+        <button class="btn btn-navy" onclick="todoOpenAdd(null)">+ Add task</button>
+      </div>
     </div>
+  </div>
+  <div id="stickySpacerTarget"></div>
+  <div class="todo-wrap">
     <div id="todoSections"></div>
   </div>
 </div>
@@ -511,7 +518,18 @@ function todoRender(){
   if(editingOwnerId){ const el=document.getElementById("ownerInput_"+editingOwnerId); if(el){el.focus();el.select();} }
   if(editingDueId){ const el=document.getElementById("dueInput_"+editingDueId); if(el)el.focus(); }
   if(addingToPhase){ const el=document.getElementById("newText"); if(el)el.focus(); }
+  // Update spacer to match sticky header height
+  const sh=document.getElementById("stickyHeader");
+  const sp=document.getElementById("stickySpacerTarget");
+  if(sh&&sp) sp.style.height=sh.offsetHeight+"px";
 }
+
+// Recalculate spacer on resize
+window.addEventListener("resize",()=>{
+  const sh=document.getElementById("stickyHeader");
+  const sp=document.getElementById("stickySpacerTarget");
+  if(sh&&sp) sp.style.height=sh.offsetHeight+"px";
+});
 
 // Initialize: try Firebase first, fall back to localStorage
 initFirebase();
